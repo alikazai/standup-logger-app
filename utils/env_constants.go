@@ -9,11 +9,11 @@ func GetHTTPListenAddress() string {
 //	func GetJwtSecret() string {
 //		return os.Getenv("JWT_SECRET")
 //	}
-//
-//	func GetMongoDbName() string {
-//		return os.Getenv("MONGO_DB_NAME")
-//	}
-//
+
+func GetDatabaseURL() string {
+	return os.Getenv("DATABASE_URL")
+}
+
 //	func GetMongoDbUrl() string {
 //		return os.Getenv("MONGO_DB_URL")
 //	}

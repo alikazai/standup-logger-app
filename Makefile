@@ -1,14 +1,35 @@
+include .env
+export $(shell sed 's/=.*//' .env)
+
 # Build the Standup Logger Application
 build:
 	@echo "Building application..."
-	@go build -o bin/standup-logger ./cmd
+	@go build -o bin/app/standup-logger ./cmd/app
 
 run: build
 	@echo "Running application..."
-	@./bin/standup-logger
+	@./bin/app/standup-logger
 
+# Run migrations
+migrate:
+	migrate -path db/migrations -database "$(DATABASE_URL)" up
+
+# Rollback latest migration
+rollback:
+	migrate -path db/migrations -database "$(DATABASE_URL)" down 1
+
+# Export schema to schema.sql
+export-schema:
+	pg_dump --schema-only --no-owner --file=db/schema.sql "$(DATABASE_URL)"
+
+# Run SQL seed files (requires go run setup)
 seed:
-	@echo "Need to setup seeding"
+	go run cmd/seed/main.go
+
+# Full workflow: migrate, export schema, seed (optional)
+# setup-db: migrate export-schema seed
+setup-db: migrate seed
+	@echo "Running application..."
 
 test:
 	@echo "Testing Standup Logger Application"
