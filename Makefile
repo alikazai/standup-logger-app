@@ -73,3 +73,8 @@ docker-connect:
 docker-network:
 	@echo "Creating Docker standup-logger-net network..."
 	@docker network create standup-logger-net
+
+# Frontend commands
+bun-build:
+	@echo "🔧 Building frontend with Bun..."
+	cd frontend && bun run build

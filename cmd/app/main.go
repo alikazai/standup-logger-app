@@ -8,13 +8,25 @@ import (
 
 	"github.com/alikazai/standup-logger-app/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
 	fmt.Println("hello world")
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		Views: html.New("./views", ".html"),
+	})
+
+	app.Static("/static", "public")
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		log.Info().Msg("Homepage")
+		return c.Render("index", fiber.Map{
+			"Title": "Standup Logger App",
+		}, "layout")
+	})
 
 	// ======================================
 	go func() {
