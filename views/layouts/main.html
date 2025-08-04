@@ -1,4 +1,3 @@
-{{ define "layout" }}
 <!doctype html>
 <html lang="en">
   <head>
@@ -7,7 +6,6 @@
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body class="bg-background">
-    {{ template "content" . }}
+    {{embed}}
   </body>
 </html>
-{{ end }}
