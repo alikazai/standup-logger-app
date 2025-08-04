@@ -4,16 +4,17 @@ go 1.23.4
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.34.0
+	golang.org/x/crypto v0.40.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/gofiber/template v1.8.3 // indirect
-	github.com/gofiber/template/html/v2 v2.1.3 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -27,5 +28,5 @@ require (
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
 )
