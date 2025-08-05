@@ -53,9 +53,9 @@ func main() {
 		log.Info().Msg("Homepage")
 		sess, _ := store.Get(c)
 
-		logged_in := sess.Get("logged_in")
+		loggedIn := sess.Get("logged_in")
 		log.Info().Msg("logged_in")
-		if logged_in == true {
+		if loggedIn == true {
 			userEmail := sess.Get("user_email").(string)
 			log.Info().Msg(userEmail)
 			today := time.Now()
@@ -82,6 +82,41 @@ func main() {
 				"Today":        today.Format("2006-01-02"),
 				"Entries":      entries,
 			})
+		} else {
+			return c.Redirect("/login")
+		}
+	})
+
+	app.Post("/standup", func(c *fiber.Ctx) error {
+		log.Info().Msg("standup form")
+		sess, _ := store.Get(c)
+
+		loggedIn := sess.Get("logged_in")
+
+		if loggedIn == true {
+			type StandupForm struct {
+				Yesterday string `form:"yesterday"`
+				Today     string `form:"today"`
+				Blockers  string `form:"blockers"`
+			}
+			var form StandupForm
+
+			if err := c.BodyParser(&form); err != nil {
+				return err
+			}
+			userEmail := sess.Get("user_email").(string)
+			user, err := getUserByEmail(userEmail)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to fetch user")
+				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
+			}
+
+			if err = submitStandupEntry(user.ID, form.Yesterday, form.Today, form.Blockers); err != nil {
+				log.Error().Err(err).Msg("failed to insert standup entry")
+				return c.Status(fiber.StatusInternalServerError).SendString("Could not add standup entry")
+			}
+
+			return c.Redirect("/")
 		} else {
 			return c.Redirect("/login")
 		}
@@ -121,7 +156,7 @@ func main() {
 			return c.Status(fiber.StatusUnauthorized).SendString("Invalid email or password")
 		}
 		userVerified := false
-		if utils.Password_verify(user.Password, []byte(form.Password)) == true {
+		if utils.Password_verify(user.Password, []byte(form.Password)) {
 			log.Error().Err(err).Msg("Login successful")
 			userVerified = true
 		} else {
@@ -253,4 +288,12 @@ func getEntriesByDate(date time.Time) ([]*StandupEntry, error) {
 	}
 
 	return entries, nil
+}
+
+func submitStandupEntry(userID uuid.UUID, yesterday, today, blockers string) error {
+	date := time.Now().UTC()
+	_, err := database.Exec(`INSERT INTO standup_entries (user_id, yesterday, today, blockers, date) VALUES ($1, $2, $3, $4, $5)`,
+		userID, yesterday, today, blockers, date)
+
+	return err
 }
