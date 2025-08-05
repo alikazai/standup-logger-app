@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,7 +19,7 @@ import (
 )
 
 var store = session.New()
-var databse *sql.DB
+var database *sql.DB
 
 type User struct {
 	ID        uuid.UUID
@@ -29,10 +28,18 @@ type User struct {
 	Password  string
 	CreatedAt time.Time
 }
+type StandupEntry struct {
+	ID        int
+	UserID    uuid.UUID
+	Name      string
+	Yesterday string
+	Today     string
+	Blockers  string
+	Date      time.Time
+}
 
 func main() {
-	databse = db.NewDB(utils.GetDatabaseURL())
-	fmt.Println("hello world")
+	database = db.NewDB(utils.GetDatabaseURL())
 	engine := htmlTemplate.New("./views", ".html")
 
 	app := fiber.New(fiber.Config{
@@ -51,9 +58,29 @@ func main() {
 		if logged_in == true {
 			userEmail := sess.Get("user_email").(string)
 			log.Info().Msg(userEmail)
-			// user_data := models.GetUserDataByEmail(userEmail)
+			today := time.Now()
+			var selectedDate time.Time
+			var err error
+
+			dateParam := c.Query("date")
+			if dateParam != "" {
+				selectedDate, err = time.Parse("2006-01-02", dateParam)
+				if err != nil {
+					return c.Status(fiber.StatusBadRequest).SendString("invalid date format")
+				}
+			} else {
+				selectedDate = today
+			}
+			entries, err := getEntriesByDate(selectedDate)
+			if err != nil {
+				log.Info().Msg("NO ENTRIES")
+				return err
+			}
 			return c.Render("index", fiber.Map{
-				"Title": "Welcome to Standup logger App",
+				"Title":        "Welcome to Standup logger App",
+				"SelectedDate": selectedDate.Format("2006-01-02"),
+				"Today":        today.Format("2006-01-02"),
+				"Entries":      entries,
 			})
 		} else {
 			return c.Redirect("/login")
@@ -144,7 +171,7 @@ func main() {
 			return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
 		}
 
-		_, err = databse.Exec(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3)`,
+		_, err = database.Exec(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3)`,
 			form.Name, form.Email, hashedPassword)
 
 		if err != nil {
@@ -182,7 +209,7 @@ func init() {
 }
 
 func getUserByEmail(email string) (*User, error) {
-	row := databse.QueryRow(`SELECT id, name, email, password, created_at FROM users WHERE email = $1`, email)
+	row := database.QueryRow(`SELECT id, name, email, password, created_at FROM users WHERE email = $1`, email)
 
 	var user User
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt)
@@ -194,4 +221,36 @@ func getUserByEmail(email string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func getEntriesByDate(date time.Time) ([]*StandupEntry, error) {
+	start := date.Truncate(24 * time.Hour)
+	end := start.Add(24 * time.Hour)
+
+	rows, err := database.Query(`
+  SELECT se.id, se.user_id, u.name, se.yesterday, se.today, se.blockers, se.date
+  FROM standup_entries se
+  JOIN users u ON se.user_id = u.id
+  WHERE se.date >= $1 AND se.date < $2
+`, start, end)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []*StandupEntry
+	for rows.Next() {
+		var entry StandupEntry
+		if err := rows.Scan(&entry.ID, &entry.UserID, &entry.Name, &entry.Yesterday, &entry.Today, &entry.Blockers, &entry.Date); err != nil {
+			return entries, err
+		}
+		entries = append(entries, &entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return entries, err
+	}
+
+	return entries, nil
 }
