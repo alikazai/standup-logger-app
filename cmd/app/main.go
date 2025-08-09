@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -58,7 +59,7 @@ func main() {
 		if loggedIn == true {
 			userEmail := sess.Get("user_email").(string)
 			log.Info().Msg(userEmail)
-			today := time.Now()
+			today := time.Now().UTC()
 			var selectedDate time.Time
 			var err error
 
@@ -111,10 +112,20 @@ func main() {
 				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
 			}
 
+			standup, err := getEntryByUserAndToday(user.ID)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
+			}
+			if standup != nil {
+				fmt.Println("submitted")
+				return c.Status(fiber.StatusInternalServerError).SendString("You have already submitted for today")
+			}
+
 			if err = submitStandupEntry(user.ID, form.Yesterday, form.Today, form.Blockers); err != nil {
 				log.Error().Err(err).Msg("failed to insert standup entry")
 				return c.Status(fiber.StatusInternalServerError).SendString("Could not add standup entry")
 			}
+			fmt.Println("new post")
 
 			return c.Redirect("/")
 		} else {
@@ -261,6 +272,8 @@ func getUserByEmail(email string) (*User, error) {
 func getEntriesByDate(date time.Time) ([]*StandupEntry, error) {
 	start := date.Truncate(24 * time.Hour)
 	end := start.Add(24 * time.Hour)
+	fmt.Println(start)
+	fmt.Println(end)
 
 	rows, err := database.Query(`
   SELECT se.id, se.user_id, u.name, se.yesterday, se.today, se.blockers, se.date
@@ -288,6 +301,26 @@ func getEntriesByDate(date time.Time) ([]*StandupEntry, error) {
 	}
 
 	return entries, nil
+}
+
+func getEntryByUserAndToday(userID uuid.UUID) (*StandupEntry, error) {
+	row := database.QueryRow(`
+  SELECT id, user_id, date
+  FROM standup_entries
+  WHERE user_id = $1
+    AND date >= CURRENT_DATE
+    AND date <  CURRENT_DATE + INTERVAL '1 day'
+`, userID)
+
+	var entry StandupEntry
+	if err := row.Scan(&entry.ID, &entry.UserID, &entry.Date); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // user not found
+		}
+		return nil, err // other DB error
+	}
+
+	return &entry, nil
 }
 
 func submitStandupEntry(userID uuid.UUID, yesterday, today, blockers string) error {
