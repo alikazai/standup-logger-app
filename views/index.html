@@ -12,7 +12,7 @@
     window.location.href = "/";
   }
 </script>
-<div class="w-full text-center">
+<div class="w-full text-center mt-8">
   <h1 class="text-3xl font-bold text-primary">Welcome to Standup Logger</h1>
 </div>
 <div class="min-h-screen p-6">
@@ -23,6 +23,12 @@
       class="bg-card text-card-foreground p-6 rounded-lg shadow"
     >
       <h2 class="text-xl font-semibold mb-4">Submit Your Standup</h2>
+      <p
+        id="messageDisplay"
+        class="bg-destructive p-4 rounded mb-4 font-bold hidden"
+      >
+        Error Message
+      </p>
       <form method="POST" action="/standup" class="space-y-4">
         <div>
           <label for="yesterday" class="block text-sm font-medium"
@@ -64,6 +70,32 @@
           Submit Today's Standup Entry
         </button>
       </form>
+      <script>
+        document
+          .querySelector("form")
+          .addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const yesterdayInput = document.getElementById("yesterday");
+            const todayInput = document.getElementById("today");
+            const blockersInput = document.getElementById("blockers");
+            const messageDisplay = document.getElementById("messageDisplay");
+
+            const formData = new FormData(this);
+
+            const response = await fetch("/standup", {
+              method: "POST",
+              body: formData,
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              console.log(data);
+              messageDisplay.innerHTML = data.message;
+              messageDisplay.classList.remove("hidden");
+            }
+            console.log(data);
+          });
+      </script>
     </div>
 
     <!-- Right: Standup Entries -->

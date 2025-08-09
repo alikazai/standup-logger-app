@@ -109,23 +109,33 @@ func main() {
 			user, err := getUserByEmail(userEmail)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to fetch user")
-				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"success": false,
+					"message": "Something went wrong",
+				})
 			}
 
 			standup, err := getEntryByUserAndToday(user.ID)
 			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"success": false,
+					"message": "Something went wrong",
+				})
 			}
 			if standup != nil {
-				fmt.Println("submitted")
-				return c.Status(fiber.StatusInternalServerError).SendString("You have already submitted for today")
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"success": false,
+					"message": "You have already submitted for today",
+				})
 			}
 
 			if err = submitStandupEntry(user.ID, form.Yesterday, form.Today, form.Blockers); err != nil {
 				log.Error().Err(err).Msg("failed to insert standup entry")
-				return c.Status(fiber.StatusInternalServerError).SendString("Could not add standup entry")
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"success": false,
+					"message": "Could not add standup entry",
+				})
 			}
-			fmt.Println("new post")
 
 			return c.Redirect("/")
 		} else {
