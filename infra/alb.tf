@@ -32,6 +32,9 @@ resource "aws_lb_target_group" "app" {
     path = "/healthz"
     port = "8080"
   }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_listener" "http" {
