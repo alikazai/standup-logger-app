@@ -9,6 +9,15 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
+resource "aws_security_group_rule" "ecs_ingress_from_alb" {
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_tasks.id
+  source_security_group_id = aws_security_group.alb.id
+}
+
 resource "aws_ecs_cluster" "this" {
   name = "standup-cluster"
 }
@@ -88,4 +97,7 @@ resource "aws_ecs_service" "app" {
   }
 
   depends_on = [aws_lb_listener.http]
+  lifecycle {
+    create_before_destroy = true
+  }
 }

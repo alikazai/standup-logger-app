@@ -1,5 +1,5 @@
 resource "aws_security_group" "alb" {
-  name   = "standup-alb-sg"
+  name   = "standup-alb-sg${var.suffix}"
   vpc_id = module.vpc.vpc_id
   ingress {
     from_port   = 80
@@ -16,14 +16,14 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_lb" "this" {
-  name               = "standup-alb"
+  name               = "standup-alb${var.suffix}"
   load_balancer_type = "application"
   subnets            = module.vpc.public_subnets
   security_groups    = [aws_security_group.alb.id]
 }
 
 resource "aws_lb_target_group" "app" {
-  name        = "standup-tg"
+  name        = "standup-tg${var.suffix}"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = module.vpc.vpc_id

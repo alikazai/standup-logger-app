@@ -25,3 +25,9 @@ variable "image_tag" {
 variable "alert_email" {
   type = string
 }
+
+variable "suffix" {
+  description = "Optional suffix to avoid AWS name collisions"
+  type        = string
+  default     = ""
+}
