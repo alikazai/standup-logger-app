@@ -17,7 +17,7 @@ jobs:
 
     permissions:
       id-token: write
-      content: read
+      contents: read
 
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
