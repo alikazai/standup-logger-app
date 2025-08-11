@@ -1,0 +1,109 @@
+name: Build, Push, Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+
+jobs:
+  build_and_push:
+    name: Build & Push to ECR
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+      image_uri: ${{ steps.meta.outputs.image_uri }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Compute tags
+        id: meta
+        run: |
+          SHA_TAG=${GITHUB_SHA::12}
+          echo "tag=$SHA_TAG" >> $GITHUB_OUTPUT
+          echo "image_uri=${{env.AWS_ACCOUNT_ID}}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com/${{env.ECR_REPOSITORY}}:$SHA_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          push: true
+          tags: |
+            ${{env.AWS_ACCOUNT_ID}}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com/${{env.ECR_REPOSITORY}}:${{steps.meta.outputs.tag}}"
+            ${{env.AWS_ACCOUNT_ID}}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com/${{env.ECR_REPOSITORY}}:latest"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  terraform_apply:
+    name: Terraform Plan & Apply
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    environment:
+      name: prod
+    permissions:
+      id-token: write
+      contents: read
+
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        run: |
+          terraform plan -input=false \
+            -var="region=${{env.AWS_REGION}}" \
+            -var='azs=["eu-west-2a","eu-west-2b"]' \
+            -var="image_tag=${{needs.build_and_push.outputs.image_tag}}" \
+            -var="alert_email=${{secrets.ALERT_EMAIL}}" \
+            -var="db_user=${{secrets.TF_VAR_db_user}}" \
+            -var="db_password=${{secrets.TF_VAR_db_password}}" \
+            -var="db_name=${{secrets.TF_VAR_db_name}}" \
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="region=${{env.AWS_REGION}}" \
+            -var='azs=["eu-west-2a","eu-west-2b"]' \
+            -var="image_tag=${{needs.build_and_push.outputs.image_tag}}" \
+            -var="alert_email=${{secrets.ALERT_EMAIL}}" \
+            -var="db_user=${{secrets.TF_VAR_db_user}}" \
+            -var="db_password=${{secrets.TF_VAR_db_password}}" \
+            -var="db_name=${{secrets.TF_VAR_db_name}}" \

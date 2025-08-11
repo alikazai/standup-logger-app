@@ -1,0 +1,140 @@
+<script>
+  const today = new Date().toISOString().split("T")[0];
+  function handleDateChange(datePicker) {
+    const selected = datePicker.value;
+    const isToday = selected === today;
+    document
+      .getElementById("form-container")
+      .classList.toggle("hidden", !isToday);
+    window.location.href = "/?date=" + selected;
+  }
+  function goToToday() {
+    window.location.href = "/";
+  }
+</script>
+<div class="w-full text-center mt-8">
+  <h1 class="text-3xl font-bold text-primary">Welcome to Standup Logger</h1>
+</div>
+<div class="min-h-screen p-6">
+  <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Left: Standup Form -->
+    <div
+      id="form-container"
+      class="bg-card text-card-foreground p-6 rounded-lg shadow"
+    >
+      <h2 class="text-xl font-semibold mb-4">Submit Your Standup</h2>
+      <p
+        id="messageDisplay"
+        class="bg-destructive p-4 rounded mb-4 font-bold hidden"
+      >
+        Error Message
+      </p>
+      <form method="POST" action="/standup" class="space-y-4">
+        <div>
+          <label for="yesterday" class="block text-sm font-medium"
+            >Yesterday</label
+          >
+          <textarea
+            id="yesterday"
+            name="yesterday"
+            class="w-full mt-1 p-2 border bg-background rounded"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+        <div>
+          <label for="today" class="block text-sm font-medium">Today</label>
+          <textarea
+            id="today"
+            name="today"
+            class="w-full mt-1 p-2 border bg-background rounded"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+        <div>
+          <label for="blockers" class="block text-sm font-medium"
+            >Blockers</label
+          >
+          <textarea
+            id="blockers"
+            name="blockers"
+            class="w-full mt-1 p-2 border bg-background rounded"
+            rows="3"
+          ></textarea>
+        </div>
+        <button
+          type="submit"
+          class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
+        >
+          Submit Today's Standup Entry
+        </button>
+      </form>
+      <script>
+        document
+          .querySelector("form")
+          .addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const yesterdayInput = document.getElementById("yesterday");
+            const todayInput = document.getElementById("today");
+            const blockersInput = document.getElementById("blockers");
+            const messageDisplay = document.getElementById("messageDisplay");
+
+            const formData = new FormData(this);
+
+            const response = await fetch("/standup", {
+              method: "POST",
+              body: formData,
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              console.log(data);
+              messageDisplay.innerHTML = data.message;
+              messageDisplay.classList.remove("hidden");
+            }
+            console.log(data);
+          });
+      </script>
+    </div>
+
+    <!-- Right: Standup Entries -->
+    <div class="bg-card text-card-foreground p-6 rounded-lg shadow">
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4"
+      >
+        <div class="flex items-center gap-2">
+          <input
+            type="date"
+            id="datePicker"
+            value="{{ .SelectedDate }}"
+            onchange="handleDateChange(this)"
+            class="border bg-background p-2 rounded"
+          />
+          <button
+            onclick="goToToday()"
+            class="text-sm text-primary hover:underline"
+          >
+            Today
+          </button>
+        </div>
+        <h2 class="text-lg font-semibold mt-2 sm:mt-0">
+          Standups for {{ .SelectedDate }}
+        </h2>
+      </div>
+
+      <div class="space-y-4">
+        {{ range .Entries }}
+        <div class="border bg-background p-4 rounded bg-gray-50">
+          <p class="text-sm text-primary font-semibold">{{ .Name }}</p>
+          <p class="mt-2"><strong>Yesterday:</strong> {{ .Yesterday }}</p>
+          <p class="mt-1"><strong>Today:</strong> {{ .Today }}</p>
+          <p class="mt-1"><strong>Blockers:</strong> {{ .Blockers }}</p>
+        </div>
+        {{ else }}
+        <p class="text-sm text-gray-500">No standup entries for this day.</p>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+</div>
