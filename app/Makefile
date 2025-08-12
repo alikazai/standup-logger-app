@@ -75,6 +75,10 @@ docker-network:
 	@docker network create standup-logger-net
 
 # Frontend commands
+bun-install:
+	@echo "Installing frontend tools with Bun..."
+	cd frontend && bun install
+
 bun-build:
-	@echo "🔧 Building frontend with Bun..."
+	@echo "Building frontend with Bun..."
 	cd frontend && bun run build
