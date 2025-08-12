@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: standup
     ports:
-      - "5454:5432"
+      - "5454:5432" # only needed if you want to connect from host
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -29,13 +29,19 @@ services:
         condition: service_healthy
     environment:
       ENVIRONMENT: test
+      HTTP_LISTEN_ADDRESS: ":8080"
+      # use the service name 'db' from the compose network
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/standup?sslmode=disable"
     ports:
-      - "8081:8080"
-    volumes:
-      - .:/standup-logger-app
-    command: ["./standup-logger"]
+      - "9595:8080"
+    # For development (hot reload, etc.) keep the mount and set the working dir:
+    # volumes:
+    #   - .:/standup-logger-app
+    # working_dir: /standup-logger-app
+    # command: ["./standup-logger"] # ensure this binary exists under the mount, or switch to `go run ./cmd/...`
     networks:
       - standup-logger-net
+    restart: unless-stopped
 
 volumes:
   postgres_data:
