@@ -49,7 +49,8 @@ resource "aws_ecs_task_definition" "app" {
       protocol      = "tcp",
     }]
     environment = [
-      { name = "PORT", value = "8080" },
+      { name = "ENVIRONMENT", value = "production" },
+      { name = "HTTP_LISTEN_ADDRESS", value = ":8080" },
       #non-secret envs go here
     ]
     secrets = [
@@ -58,6 +59,7 @@ resource "aws_ecs_task_definition" "app" {
       { name = "DB_NAME", valueFrom = "${aws_secretsmanager_secret.db.arn}:DB_NAME::" },
       { name = "DB_USER", valueFrom = "${aws_secretsmanager_secret.db.arn}:DB_USER::" },
       { name = "DB_PASSWORD", valueFrom = "${aws_secretsmanager_secret.db.arn}:DB_PASSWORD::" },
+      { name = "DATABASE_URL", valueFrom = "${aws_secretsmanager_secret.db.arn}:DATABASE_URL::" },
     ]
     logConfiguration = {
       logDriver = "awslogs"
