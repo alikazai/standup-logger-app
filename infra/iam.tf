@@ -13,6 +13,21 @@ resource "aws_iam_role" "task_exec" {
   assume_role_policy = data.aws_iam_policy_document.task_exec_assume.json
 }
 
+# Allow the EXECUTION role to read your secret for container startup
+resource "aws_iam_role_policy" "task_exec_secrets" {
+  name = "standup-task-exec-secrets"
+  role = aws_iam_role.task_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect   = "Allow",
+      Action   = ["secretsmanager:GetSecretValue"],
+      Resource = aws_secretsmanager_secret.db.arn
+    }]
+  })
+}
+
 #allow pull from ECR, write logs 
 resource "aws_iam_role_policy_attachment" "task_exec_ecr" {
   role       = aws_iam_role.task_exec.name
@@ -26,7 +41,7 @@ resource "aws_iam_role" "task_app" {
 }
 
 resource "aws_iam_policy" "read_secrets" {
-  name = "standupp-read-secrets"
+  name = "standup-read-secrets"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
