@@ -14,12 +14,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN go build -o /app/standup-logger ./cmd/app/main.go
-# build migrate CLI
-RUN go install github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.0
-# (DO NOT set ENTRYPOINT here; this is a build stage only)
+# build migrate CLI with Postgres driver
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.0
 
 # ---------- 3) Runtime ----------
-FROM alpine:3.20
+FROM alpine:latest
 WORKDIR /app
 
 # tools you need at runtime
@@ -42,8 +41,10 @@ COPY Makefile                                        /app/Makefile
 COPY entrypoint.sh                                   /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# optional switch (default skip)
+# default: don't run migrations automatically
 ENV RUN_MIGRATIONS=false
+# optional: when true, run migrations then EXIT (useful for one-off migration job)
+ENV RUN_MIGRATIONS_EXIT=false
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]

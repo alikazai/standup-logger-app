@@ -1,6 +1,3 @@
--include .env
-export $(shell sed 's/=.*//' .env)
-
 # Build the Standup Logger Application
 build:
 	@echo "Building application..."
@@ -12,15 +9,16 @@ run: build
 
 # Run migrations
 migrate:
-	migrate -path db/migrations -database "$(DATABASE_URL)" up
+	@echo "Applying migrations from /app/db/migrations"
+	migrate -path /app/db/migrations -database "$$DATABASE_URL" up
 
 # Rollback latest migration
 rollback:
-	migrate -path db/migrations -database "$(DATABASE_URL)" down 1
+	migrate -path db/migrations -database "$$(DATABASE_URL)" down 1
 
 # Export schema to schema.sql
 export-schema:
-	pg_dump --schema-only --no-owner --file=db/schema.sql "$(DATABASE_URL)"
+	pg_dump --schema-only --no-owner --file=db/schema.sql "$$(DATABASE_URL)"
 
 # Run SQL seed files (requires go run setup)
 seed:

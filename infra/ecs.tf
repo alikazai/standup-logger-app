@@ -52,6 +52,7 @@ resource "aws_ecs_task_definition" "app" {
       { name = "ENVIRONMENT", value = "production" },
       { name = "HTTP_LISTEN_ADDRESS", value = ":8080" },
       { name = "RUN_MIGRATIONS", value = "true" },
+      { name = "RUN_MIGRATIONS_EXIT", value = "false" },
       #non-secret envs go here
     ]
     secrets = [
