@@ -31,3 +31,8 @@ variable "suffix" {
   type        = string
   default     = ""
 }
+
+variable "domain_name" {
+  type    = string
+  default = "standup-app.alikazai.com"
+}
