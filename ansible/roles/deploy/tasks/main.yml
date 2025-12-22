@@ -19,7 +19,7 @@
     name: ghcr.io/alikazai/standup-app:latest
     source: pull
 
-- name: Deploy stack with Docker Compose
-  community.docker.docker_compose:
+- name: Deploy stack with Docker Compose v2
+  community.docker.docker_compose_v2:
     project_src: /opt/standup
     state: present
