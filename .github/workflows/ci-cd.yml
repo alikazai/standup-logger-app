@@ -44,17 +44,25 @@ jobs:
           sudo install -m 755 cloudflared /usr/local/bin/cloudflared
           cloudflared --version
 
-      - name: Deploy via Cloudflare Access tunnel
+      - name: Deploy through Cloudflare Access TCP proxy
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          # Establish Cloudflare Access tunnel and run Ansible remotely
-          cloudflared access ssh --hostname ssh.alikazai.com \
-            --id "$CF_ACCESS_CLIENT_ID" \
-            --secret "$CF_ACCESS_CLIENT_SECRET" \
-            --command "ansible-playbook ansible/playbook.yml \
-              -i '${{ vars.SSH_HOST }},' \
-              --user '${{ vars.SSH_USER }}' \
-              --private-key <(echo '${{ secrets.SSH_PRIVATE_KEY }}')"
+          # Install and start a background proxy from localhost:2222 → ssh.alikazai.com:22
+          cloudflared access tcp \
+            --hostname ssh.alikazai.com \
+            --destination localhost:22 \
+            --service-token-id "$CF_ACCESS_CLIENT_ID" \
+            --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
+            --url localhost:2222 &
+          sleep 5
+          # Run Ansible against the local proxy port
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ansible_key
+          chmod 600 ansible_key
+          ansible-playbook ansible/playbook.yml \
+            -i "localhost," \
+            --user "${{ vars.SSH_USER }}" \
+            --private-key ansible_key \
+            -e ansible_port=2222
