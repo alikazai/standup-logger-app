@@ -17,6 +17,7 @@ jobs:
         with:
           go-version: "1.22"
 
+      # Optional: Run tests before building
       # - name: Run unit tests
       #   run: go test ./...
 
@@ -27,30 +28,33 @@ jobs:
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push image to GHCR
-        run: |
-          docker push ghcr.io/${{ github.repository }}:latest
+        run: docker push ghcr.io/${{ github.repository }}:latest
 
       - name: Install Ansible
         run: |
           sudo apt update && sudo apt install -y ansible
           ansible-galaxy collection install community.docker
 
+      # -----------------------------------------------------------
+      # Cloudflare Access (Zero Trust) Connection
+      # -----------------------------------------------------------
       - name: Install cloudflared
-        run: sudo apt-get install -y cloudflared
-      - name: Run Ansible through Access tunnel
         run: |
-          cloudflared access ssh --hostname ssh.alikazai.com \
-            --id ${{ secrets.CF_ACCESS_CLIENT_ID }} \
-            --secret ${{ secrets.CF_ACCESS_CLIENT_SECRET }} \
-            --command "ansible-playbook ansible/playbook.yml ..."
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          sudo install -m 755 cloudflared /usr/local/bin/cloudflared
+          cloudflared --version
 
-      - name: Deploy via Ansible over Cloudflare SSH
+      - name: Deploy via Cloudflare Access tunnel
         env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ansible_key
-          chmod 600 ansible_key
-          ansible-playbook ansible/playbook.yml \
-            -i "${{ vars.SSH_HOST }}," \
-            --user "${{ vars.SSH_USER }}" \
-            --private-key ansible_key
+          # Establish Cloudflare Access tunnel and run Ansible remotely
+          cloudflared access ssh --hostname ssh.alikazai.com \
+            --id "$CF_ACCESS_CLIENT_ID" \
+            --secret "$CF_ACCESS_CLIENT_SECRET" \
+            --command "ansible-playbook ansible/playbook.yml \
+              -i '${{ vars.SSH_HOST }},' \
+              --user '${{ vars.SSH_USER }}' \
+              --private-key <(echo '${{ secrets.SSH_PRIVATE_KEY }}')"
