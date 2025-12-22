@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:17
+    container_name: standup_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: standup
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - standup_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ghcr.io/alikazai/standup-logger-app:latest
+    container_name: standup_app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      HTTP_LISTEN_ADDRESS: ":8080"
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/standup?sslmode=disable"
+    ports:
+      - "127.0.0.1:8080:8080" # only accessible locally (Cloudflare tunnel handles public access)
+    networks:
+      - standup_net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  standup_net:
+    driver: bridge
