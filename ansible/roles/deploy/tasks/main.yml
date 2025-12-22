@@ -1,0 +1,25 @@
+- name: Ensure Docker installed
+  apt:
+    name:
+      - docker.io
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Copy docker-compose.yml
+  copy:
+    src: docker-compose.yml
+    dest: /opt/standup/docker-compose.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Pull latest image
+  community.docker.docker_image:
+    name: ghcr.io/alikazai/standup-app:latest
+    source: pull
+
+- name: Deploy stack with Docker Compose
+  community.docker.docker_compose:
+    project_src: /opt/standup
+    state: present

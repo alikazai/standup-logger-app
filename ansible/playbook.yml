@@ -1,0 +1,4 @@
+- hosts: standup_server
+  become: true
+  roles:
+    - deploy
