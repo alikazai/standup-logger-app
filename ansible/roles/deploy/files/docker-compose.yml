@@ -30,7 +30,7 @@ services:
       HTTP_LISTEN_ADDRESS: ":8080"
       DATABASE_URL: "postgres://postgres:postgres@db:5432/standup?sslmode=disable"
     ports:
-      - "127.0.0.1:8080:8080" # only accessible locally (Cloudflare tunnel handles public access)
+      - "127.0.0.1:8001:8080" # only accessible locally (Cloudflare tunnel handles public access)
     networks:
       - standup_net
     restart: unless-stopped

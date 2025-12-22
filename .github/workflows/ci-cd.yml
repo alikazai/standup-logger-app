@@ -35,6 +35,15 @@ jobs:
           sudo apt update && sudo apt install -y ansible
           ansible-galaxy collection install community.docker
 
+      - name: Install cloudflared
+        run: sudo apt-get install -y cloudflared
+      - name: Run Ansible through Access tunnel
+        run: |
+          cloudflared access ssh --hostname ssh.alikazai.com \
+            --id ${{ secrets.CF_ACCESS_CLIENT_ID }} \
+            --secret ${{ secrets.CF_ACCESS_CLIENT_SECRET }} \
+            --command "ansible-playbook ansible/playbook.yml ..."
+
       - name: Deploy via Ansible over Cloudflare SSH
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
