@@ -42,6 +42,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ansible_key
           chmod 600 ansible_key
           ansible-playbook ansible/playbook.yml \
-            -i "${{ secrets.SSH_HOST }}," \
-            --user "${{ secrets.SSH_USER }}" \
+            -i "${{ vars.SSH_HOST }}," \
+            --user "${{ vars.SSH_USER }}" \
             --private-key ansible_key
