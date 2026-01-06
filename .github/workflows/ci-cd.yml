@@ -49,6 +49,7 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           ANSIBLE_HOST_KEY_CHECKING: "False"
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           # Install and start a background proxy from localhost:2222 → ssh.alikazai.com:22
           cloudflared access tcp \
@@ -57,12 +58,21 @@ jobs:
             --service-token-id "$CF_ACCESS_CLIENT_ID" \
             --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
             --url localhost:2222 &
+
           sleep 5
-          # Run Ansible against the local proxy port
+
+          # Write vault password to a temporary file
+          echo "$ANSIBLE_VAULT_PASSWORD" > .vault_pass.txt
+
+          # Run Ansible against the local proxy port with vault password
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ansible_key
           chmod 600 ansible_key
           ansible-playbook ansible/playbook.yml \
             -i "localhost," \
             --user "${{ vars.SSH_USER }}" \
             --private-key ansible_key \
+            --vault-password-file .vault_pass.txt \
             -e ansible_port=2222
+
+          # Clean up credentials
+          shred -u .vault_pass.txt ansible_key
