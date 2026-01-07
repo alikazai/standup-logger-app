@@ -62,7 +62,7 @@ jobs:
           echo "$ANSIBLE_VAULT_PASSWORD" > .vault_pass.txt
 
           cat <<'EOF' > ansible_key
-          ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          ${{ secrets.SSH_PRIVATE_KEY }}
           EOF
           chmod 600 ansible_key
 
