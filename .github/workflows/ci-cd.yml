@@ -54,7 +54,6 @@ jobs:
           # Install and start a background proxy from localhost:2222 → ssh.alikazai.com:22
           cloudflared access tcp \
             --hostname ssh.alikazai.com \
-            --destination localhost:22 \
             --service-token-id "$CF_ACCESS_CLIENT_ID" \
             --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
             --url localhost:2222 &
