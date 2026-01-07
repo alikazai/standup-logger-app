@@ -61,7 +61,9 @@ jobs:
 
           echo "$ANSIBLE_VAULT_PASSWORD" > .vault_pass.txt
 
-          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > ansible_key
+          cat <<'EOF' > ansible_key
+          ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          EOF
           chmod 600 ansible_key
 
           ansible-playbook ansible/playbook.yml \
