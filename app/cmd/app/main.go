@@ -19,8 +19,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var store = session.New()
-var database *sql.DB
+var (
+	store    = session.New()
+	database *sql.DB
+)
 
 type User struct {
 	ID        uuid.UUID
@@ -41,6 +43,12 @@ type StandupEntry struct {
 
 func main() {
 	database = db.NewDB(utils.GetDatabaseURL())
+
+	db.RunMigrations(utils.GetDatabaseURL(), "db/migrations")
+
+	if err := db.RunSeedFiles(database, "db/seed"); err != nil {
+		log.Panic().Err(err).Msg("seeding failed")
+	}
 	engine := htmlTemplate.New("./views", ".html")
 
 	app := fiber.New(fiber.Config{
@@ -229,7 +237,6 @@ func main() {
 
 		_, err = database.Exec(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3)`,
 			form.Name, form.Email, hashedPassword)
-
 		if err != nil {
 			log.Error().Err(err).Msg("failed to insert user")
 			return c.Status(fiber.StatusInternalServerError).SendString("Could not register user")
@@ -291,7 +298,6 @@ func getEntriesByDate(date time.Time) ([]*StandupEntry, error) {
   JOIN users u ON se.user_id = u.id
   WHERE se.date >= $1 AND se.date < $2
 `, start, end)
-
 	if err != nil {
 		return nil, err
 	}
