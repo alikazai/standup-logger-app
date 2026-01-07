@@ -17,6 +17,13 @@
     state: absent
     purge: true
 
+- name: Wait for apt lock to be released
+  shell: |
+    while fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+      sleep 5
+    done
+  changed_when: false
+
 - name: Install prerequisite packages
   become: true
   apt:
