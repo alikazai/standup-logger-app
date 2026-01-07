@@ -51,7 +51,6 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
-          # Install and start a background proxy from localhost:2222 → ssh.alikazai.com:22
           cloudflared access tcp \
             --hostname ssh.alikazai.com \
             --service-token-id "$CF_ACCESS_CLIENT_ID" \
@@ -60,18 +59,18 @@ jobs:
 
           sleep 5
 
-          # Write vault password to a temporary file
           echo "$ANSIBLE_VAULT_PASSWORD" > .vault_pass.txt
 
-          # Run Ansible against the local proxy port with vault password
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ansible_key
+          cat << 'EOF' > ansible_key
+          ${{ secrets.SSH_PRIVATE_KEY }}
+          EOF
           chmod 600 ansible_key
+
           ansible-playbook ansible/playbook.yml \
             -i "localhost," \
             --user "${{ vars.SSH_USER }}" \
             --private-key ansible_key \
             --vault-password-file .vault_pass.txt \
-            -e ansible_port=2222
+            -e "ansible_port=2222 ansible_host=127.0.0.1"
 
-          # Clean up credentials
           shred -u .vault_pass.txt ansible_key
