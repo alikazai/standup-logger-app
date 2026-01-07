@@ -64,6 +64,7 @@ jobs:
           cat << 'EOF' > ansible_key
           ${{ secrets.SSH_PRIVATE_KEY }}
           EOF
+
           chmod 600 ansible_key
 
           ansible-playbook ansible/playbook.yml \
