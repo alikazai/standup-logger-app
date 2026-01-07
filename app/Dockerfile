@@ -42,7 +42,7 @@ COPY entrypoint.sh                                   /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # default: don't run migrations automatically
-ENV RUN_MIGRATIONS=false
+ENV RUN_MIGRATIONS=true
 # optional: when true, run migrations then EXIT (useful for one-off migration job)
 ENV RUN_MIGRATIONS_EXIT=false
 EXPOSE 8080

@@ -44,11 +44,6 @@ type StandupEntry struct {
 func main() {
 	database = db.NewDB(utils.GetDatabaseURL())
 
-	db.RunMigrations(utils.GetDatabaseURL(), "db/migrations")
-
-	if err := db.RunSeedFiles(database, "db/seed"); err != nil {
-		log.Panic().Err(err).Msg("seeding failed")
-	}
 	engine := htmlTemplate.New("./views", ".html")
 
 	app := fiber.New(fiber.Config{
