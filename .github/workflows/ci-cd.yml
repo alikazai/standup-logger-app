@@ -66,6 +66,8 @@ jobs:
           EOF
           chmod 600 ansible_key
 
+          ssh-keygen -lf ansible_key
+
           ansible-playbook ansible/playbook.yml \
             -i "localhost," \
             --user "${{ vars.SSH_USER }}" \
